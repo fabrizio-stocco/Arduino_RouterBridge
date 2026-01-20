@@ -132,7 +132,7 @@ public:
 
 private:
     uint32_t msg_id_wait{};
-    atomic_t _executed = ATOMIC_INIT(0);;
+    atomic_t _executed = ATOMIC_INIT(0);
 
     MsgPack::str_t method;
     RPCClient* client;
@@ -158,6 +158,7 @@ class BridgeClass {
     struct k_thread upd_thread_data{};
 
     bool started = false;
+    atomic_t _paused = ATOMIC_INIT(0);
 
 public:
 
@@ -204,6 +205,22 @@ public:
         started = call(RESET_METHOD).result(res) && res;
         k_mutex_unlock(&bridge_mutex);
         return res;
+    }
+
+    void pause() {
+        k_mutex_lock(&bridge_mutex, K_FOREVER);
+        if (atomic_cas(&_paused, 0, 1)) k_thread_suspend(upd_tid);
+        k_mutex_unlock(&bridge_mutex);
+    }
+
+    void resume() {
+        k_mutex_lock(&bridge_mutex, K_FOREVER);
+        if (atomic_cas(&_paused, 1, 0)) k_thread_resume(upd_tid);
+        k_mutex_unlock(&bridge_mutex);
+    }
+
+    bool is_paused() {
+        return atomic_get(&_paused) == 1;
     }
 
     bool getRouterVersion(MsgPack::str_t& version) {
@@ -337,6 +354,7 @@ inline void updateEntryPoint(void *, void *, void *){
 }
 
 static void safeUpdate(){
+    if (Bridge.is_paused()) return;
     BridgeClassUpdater::safeUpdate(&Bridge);
 }
 
