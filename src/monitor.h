@@ -79,8 +79,10 @@ public:
 
     int read() override {
         uint8_t c = 0;
-        read(&c, 1);
-        return c;
+        int cch_read;
+
+        cch_read = read(&c, 1);
+        return cch_read? c : -1;
     }
 
     int read(uint8_t* buffer, size_t size) {
