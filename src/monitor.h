@@ -132,6 +132,7 @@ public:
             bridge->call(MON_WRITE_METHOD, send_buffer).result(written);
         } else {
             bridge->notify(MON_WRITE_METHOD, send_buffer);
+            written = size;
         }
 
         return written;
