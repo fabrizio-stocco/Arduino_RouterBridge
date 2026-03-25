@@ -187,6 +187,9 @@ public:
         k_mutex_lock(&bridge_mutex, K_FOREVER);
 
         serial_ptr->begin(baud);
+        while (!*serial_ptr){
+            k_yield();
+        }
         // This allows Router to flush broken RPCs from the previous run
         serial_ptr->write("MCU starting RPC Bridge communication");
         transport = new SerialTransport(*serial_ptr);
